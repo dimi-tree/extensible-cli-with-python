@@ -12,6 +12,10 @@ FAIL_C = '\033[91m'
 END_C = '\033[0m'
 
 
+# TODO make telemetry user configurable
+ENABLE_TELEMETRY = False
+
+
 def execute(args):
     if config.DRY_RUN:
         print(args)
@@ -65,7 +69,10 @@ class KBK:
             else:
                 # use dispatch pattern to invoke method with same name so it's easy to add new subcommands
                 getattr(self, command)(arguments)
-    
+
+        if ENABLE_TELEMETRY:
+            send_metric(arguments)
+
     def __create_parser(self, name, description):
         parser = self.subparsers.add_parser(
             name=name,
@@ -130,6 +137,33 @@ def print_available_commands(instance):
             continue
         else:
             print(f'  {_cmd}')    
+
+
+def send_metric(cli_input):
+    """Telemetry - emitting usage events to a backend server."""
+    # TODO capture exit reason and duration
+    payload = {
+        'metrics': [
+            {
+                'userId': os.getlogin(),
+                'osPlatform': platform.system(),
+                'osVersion': platform.version(),
+                'pythonVersion': sys.version,
+                'command': {
+                    'input': ' '.join(cli_input),
+                    'exitReason': 'Not Implemented',
+                    'exitCode': 'Not Implemented',
+                    'duration': 'Not Implemented',
+                    'timestamp': datetime.now().strftime('%m/%d/%Y, %H:%M:%S'),
+                },
+            }
+        ]
+    }
+
+    # Buffering the metrics locally and sending at some interval might be a more robust solution
+    requests.post(
+        'http://localhost:8080/metrics', json=payload, timeout=2000
+    )
 
 
 def main():
