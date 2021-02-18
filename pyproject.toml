@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cli_project"
-version = "0.1.0"
+version = "0.0.9"
 description = ""
 authors = ["Dimitri Denisjonok <dimitri.781@gmail.com>"]
 
@@ -9,6 +9,9 @@ python = "^3.9"
 
 [tool.poetry.dev-dependencies]
 behave = "^1.2"
+
+[tool.poetry.scripts]
+kbk = 'cli_project.kbk:main'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

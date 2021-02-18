@@ -1,8 +1,11 @@
 import argparse
 import subprocess
 import sys
+import inspect
 
-import config
+from cli_project import __version__
+from cli_project import config
+
 
 # Colours
 FAIL_C = '\033[91m'
@@ -33,7 +36,7 @@ class KBK:
             '-v',
             '--version',
             action='version',
-            version=f'%(prog)s 0.1.0',
+            version=f'%(prog)s {__version__}',
         )
         self.base_subparser.add_argument(
             '-d',
@@ -48,12 +51,20 @@ class KBK:
         
         self.subparsers = parser.add_subparsers()
 
-        try:
+        # Handle no arguments
+        if len(arguments) == 0:
+            self.help(arguments)
+        else:
             command = arguments[0]
-        except IndexError:
-            exit(0)
-        
-        getattr(self, command)(arguments)
+            if (command == '-h') or (command == '--help'):
+                self.help(arguments)
+            
+            # handle undefined command
+            elif not hasattr(self, command):
+                self.help(arguments)
+            else:
+                # use dispatch pattern to invoke method with same name so it's easy to add new subcommands
+                getattr(self, command)(arguments)
     
     def __create_parser(self, name, description):
         parser = self.subparsers.add_parser(
@@ -64,6 +75,20 @@ class KBK:
         return parser
     
     # -------- COMMANDS -------- #
+
+    def help(self, arguments):
+        parser = self.__create_parser(
+            'help', 'Instructions for using the kbk CLI'
+        )
+        parser.add_argument('help', nargs='?', help=argparse.SUPPRESS)
+        parser.add_argument(
+            'command',
+            nargs='?',
+            help='name of command to show usage for',
+        )
+        
+        parser.print_help()
+        print_available_commands(self)
 
     def hello(self, arguments):
         parser = self.__create_parser('hello', 'A friendly Hello World')
@@ -94,6 +119,17 @@ class KBK:
             print(output)
         else:
             print(f'{FAIL_C}{output}{END_C}')
+
+
+def print_available_commands(instance):
+    print('\nList of available commands are:')
+    
+    commands = [attr for attr in dir(instance)if inspect.ismethod(getattr(instance, attr))][2:] 
+    for _cmd in commands:
+        if _cmd == 'help':
+            continue
+        else:
+            print(f'  {_cmd}')    
 
 
 def main():
